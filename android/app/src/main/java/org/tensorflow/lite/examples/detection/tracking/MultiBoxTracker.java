@@ -37,6 +37,7 @@ import org.tensorflow.lite.examples.detection.tflite.Classifier.Recognition;
 
 /** A tracker that handles non-max suppression and matches existing objects to new detections. */
 public class MultiBoxTracker {
+  // Text size for displaying the recognition label (in dp)
   private static final float TEXT_SIZE_DIP = 18;
   private static final float MIN_SIZE = 16.0f;
   private static final int[] COLORS = {
@@ -62,7 +63,8 @@ public class MultiBoxTracker {
   private final List<TrackedRecognition> trackedObjects = new LinkedList<TrackedRecognition>();
   private final Paint boxPaint = new Paint();
   private final float textSizePx;
-  private final BorderedText borderedText;
+  private final float textSizePx2;
+  private final BorderedText borderedText, borderedText2;
   private Matrix frameToCanvasMatrix;
   private int frameWidth;
   private int frameHeight;
@@ -83,7 +85,13 @@ public class MultiBoxTracker {
     textSizePx =
             TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_DIP, TEXT_SIZE_DIP, context.getResources().getDisplayMetrics());
+    textSizePx2 =
+            TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 30, context.getResources().getDisplayMetrics());  
+
     borderedText = new BorderedText(textSizePx);
+    borderedText2 = new BorderedText(textSizePx2);
+
   }
 
   public synchronized void setFrameConfiguration(
@@ -96,7 +104,7 @@ public class MultiBoxTracker {
   public synchronized void drawDebug(final Canvas canvas) {
     final Paint textPaint = new Paint();
     textPaint.setColor(Color.WHITE);
-    textPaint.setTextSize(60.0f);
+    textPaint.setTextSize(30.0f);
 
     final Paint boxPaint = new Paint();
     boxPaint.setColor(Color.RED);
@@ -122,6 +130,14 @@ public class MultiBoxTracker {
 
   public synchronized void draw(final Canvas canvas) {
     final boolean rotated = sensorOrientation % 180 == 90;
+
+    
+    final float widthDevice = canvas.getWidth();
+    final float heightDevice = canvas.getHeight();
+
+    final float middleX = widthDevice / 2;
+    final float middleY = heightDevice / 2;
+
     final float multiplier =
             Math.min(
                     canvas.getHeight() / (float) (rotated ? frameWidth : frameHeight),
@@ -143,14 +159,28 @@ public class MultiBoxTracker {
       float cornerSize = Math.min(trackedPos.width(), trackedPos.height()) / 8.0f;
       canvas.drawRoundRect(trackedPos, cornerSize, cornerSize, boxPaint);
 
-      final String labelString =
+      // ngambil data title dari hasil deteksi
+      final String titleString =
               !TextUtils.isEmpty(recognition.title)
-                      ? String.format("%s %.2f", recognition.title, (100 * recognition.detectionConfidence))
-                      : String.format("%.2f", (100 * recognition.detectionConfidence));
-      //            borderedText.drawText(canvas, trackedPos.left + cornerSize, trackedPos.top,
-      // labelString);
+                      ? String.format("Hasil : %s ", recognition.title)
+                      : " ";
+
+      // ngambil data confidence dari hasil deteksi
+      final String confidenceString = String.format("%.2f", (100 * recognition.detectionConfidence));
+
+      // Ini untuk nampilkan hasil deteksi (Title) 
+      borderedText2.drawText(
+              canvas, 0 , heightDevice - 500, titleString
+      );
+
+      // Ini untuk nampilkan hasil deteksi (Confidence)
       borderedText.drawText(
-              canvas, trackedPos.left + cornerSize, trackedPos.top, labelString + "%", boxPaint);
+              canvas, trackedPos.left + cornerSize, trackedPos.top, confidenceString + "%", boxPaint);
+
+      
+      
+
+            
     }
   }
 
